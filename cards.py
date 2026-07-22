@@ -3,17 +3,21 @@ import os
 
 class PlayingCards:
     """Class for any card game. Creates, shuffles, and deals cards to the player."""
-    def __init__(self):
+    def __init__(self, deck_count=1):
         self.suits = ["♠", "♥", "♦", "♣"]
         self.values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
         self.deck = [] # Full deck of cards that the game draws from
+        self.deck_count = deck_count
     
 
     def build_deck(self):
-        # Creates a new deck at the start of each game. Make sure to clear the deck and hand first.
-        for suit in self.suits:
-            for value in self.values:
-                self.deck.append((suit, value))
+        # Creates a new deck at the start of each game.
+        self.clear_deck()
+
+        for i in range(self.deck_count):
+            for suit in self.suits:
+                for value in self.values:
+                    self.deck.append((value, suit))
 
 
 
@@ -42,11 +46,6 @@ class PlayingCards:
         self.deck.clear() # Resets deck for the new game
     
 
-    def reset_cards(self):
-        self.clear_deck()
-        self.clear_hand()
-
-
     def cards_remaining(self):
         return len(self.deck)
     
@@ -67,4 +66,6 @@ dealer_hand.extend(blackjack.deal_cards(2))
 print(player_hand)
 print(dealer_hand)
 
+player_hand.extend(blackjack.deal_cards(1))
+print(player_hand)
 
