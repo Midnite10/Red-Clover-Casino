@@ -1,5 +1,4 @@
 import random as rand
-import os
 
 
 class PlayingCards:
@@ -52,7 +51,7 @@ class PlayingCards:
     
 
 class BlackJack:
-
+    # Blackjack game code. Call this class to begin a game of blackjack
     def __init__(self):
         self.deck = PlayingCards()
         self.deck.build_deck()
@@ -65,6 +64,7 @@ class BlackJack:
 
 
     def hand_value(self, hand):
+        # Finds the value of a specific hand.
         total = 0
         aces = 0
 
@@ -86,11 +86,13 @@ class BlackJack:
         return total
     
     def deal_start(self):
+        # Starts the game by giving the player and dealer 2 cards each
         self.player_hand.extend(self.deck.deal_cards(2))
         self.dealer_hand.extend(self.deck.deal_cards(2))
 
     
     def hit(self):
+        # When player clicks the hit button, this function draws an extra card
         self.player_hand.extend(self.deck.deal_cards(1))
 
         if self.hand_value(self.player_hand) > 21:
@@ -98,11 +100,13 @@ class BlackJack:
 
     
     def dealer_turn(self):
+        # Computer program to run the dealers turn. Dealer hits until their hand value is 17 or higher
         while self.hand_value(self.dealer_hand) < 17:
             self.dealer_hand.extend(self.deck.deal_cards(1))
     
 
     def find_winner(self):
+        # If loops that find the winner of each game
         player = self.hand_value(self.player_hand)
         dealer = self.hand_value(self.dealer_hand)
 
@@ -122,6 +126,7 @@ class BlackJack:
     
 
     def show_hands(self, reveal=False):
+        # Displays the cards of the dealer and player hands. Will be changed when GUI is connected
         print("\nDealer:")
 
         if reveal:
@@ -140,7 +145,8 @@ class BlackJack:
         print(f" ({self.hand_value(self.player_hand)})")
 
 
-    def play_blackjack(self):
+    def play(self):
+        # Game play function for blackjack
         self.deal_start()
 
         while not self.game_over:
@@ -163,4 +169,4 @@ class BlackJack:
 
 
 game = BlackJack()
-game.play_blackjack()
+game.play()
