@@ -7,7 +7,7 @@ class CasinoGUI:
         self.root.title("Red Clover Casino")
         self.root.geometry("800x600")
 
-        self.homepage()
+        self.show_homepage()
 
 
     def show_homepage(self):
