@@ -294,16 +294,98 @@ class CasinoGUI:
         else:
             value, suit = card
             background = "white"
-            foreground = "black"
+            if suit == "♠" or suit == "♣":
+                foreground = "black"
+            else:
+                foreground = "red"
             text = f"{value}\n{suit}"
 
         card_label = tk.Label(parent, text=text, bg=background, fg=foreground, width=4, height=3, relief="solid", borderwidth=2, font="Arial 18 bold")
 
         return card_label
+    
+    def draw_player_hand(self):
+        for widget in self.player_frame.winfo_children():
+            widget.destroy()
 
-    def update_blackjack_gui():
+        for index, card in enumerate(self.game.player_hand):
+            card_widget = self.create_card(self.player_frame, card=card)
+            card_widget.grid(row=0, column=index, padx=10)
+    
+    def draw_dealer_hand(self, reveal=False):
+        for widget in self.dealer_frame.winfo_children():
+            widget.destroy()
+
+        for index, card in enumerate(self.game.dealer_hand):
+
+            if index == 0 and not reveal:
+                card_widget = self.create_card(self.dealer_frame, hidden=True)
+
+            else:
+
+                card_widget = self.create_card(
+                    self.dealer_frame,
+                    card=card
+                )
+
+            card_widget.grid(
+                row=0,
+                column=index,
+                padx=10
+            )
+
+    def update_blackjack_gui(self, reveal=False):
         # Updates screen when new card is drawn
-        print("placeholder")
+        self.draw_player_hand()
+        self.draw_dealer_hand(reveal)
+
+        self.player_total.config(
+            text=f"You ({self.game.hand_value(self.game.player_hand)})"
+        )
+        if reveal:
+            self.dealer_total.config(text=f"Dealer ({self.game.hand_value(self.game.dealer_hand)})")
+
+        else:
+            self.dealer_total.config(text="Dealer")
+    
+    def create_blackjack_buttons(self):
+        self.button_frame = tk.Frame(self.content_frame, bg="#1f1b1d")
+        self.button_frame.pack(fill="x", pady=15)
+
+        self.hit_button = tk.Button(self.button_frame, text="HIT", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.hit)
+        self.hit_button.pack(side="left", expand=True, padx=20)
+
+        self.stand_button = tk.Button(self.button_frame, text="STAND", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.stand)
+        self.stand_button.pack(side="left", expand=True, padx=20)
+
+        self.quit_button = tk.Button(self.button_frame, text="QUIT", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.quit_blackjack)
+        self.quit_button.pack(side="left", expand=True, padx=20)
+    
+    def hit(self):
+        self.game.hit()
+        self.update_blackjack_gui()
+
+        if self.game.game_over:
+            self.update_blackjack_gui(True)
+            winner = self.game.find_winner()
+
+            self.result_label.config(text=f"{winner} wins!")
+            self.hit_button.config(state="disabled")
+            self.stand_button.config(state="disabled")
+    
+    def stand(self):
+        self.game.dealer_turn()
+        self.update_blackjack_gui(True)
+
+        winner = self.game.find_winner()
+        self.result_label.config(text=f"{winner} wins!")
+
+        self.hit_button.config(state="disabled")
+        self.stand_button.config(state="disabled")
+    
+    def quit_blackjack(self):
+        self.clear_content()
+        self.show_homepage()
 
 
 # Main program Function
