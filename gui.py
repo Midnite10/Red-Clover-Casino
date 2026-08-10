@@ -41,7 +41,8 @@ class Accounts:
                 "games_played": 0, # total amount of games played
                 "wins": 0, # amount of games won
                 "losses": 0, # amount of games lost
-                "money_won": 0 # amount of money won
+                "money_won": 0, # amount of money won
+                "money_lost": 0
             }
         }
 
@@ -414,7 +415,7 @@ class CasinoGUI:
         self.homepage.columnconfigure([0, 1, 2, 3], weight=1)
 
         # Button screen
-        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0, command=lambda: self.show_blackjack())
+        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0, command=self.blackjack_bet_popup)
         self.blackjack_button.grid(row=1, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(32, 16), sticky="nsew")
 
         self.slots_button = tk.Button(self.homepage, text="SLOTS", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0)
@@ -476,7 +477,59 @@ class CasinoGUI:
 
         elif result == "loss":
             stats["losses"] += 1
-            stats["money_lost"] -= self.current_bet
+            stats["money_lost"] += self.current_bet
+    
+    def blackjack_bet_popup(self):
+        """Shows a popup allowing the player to place a bet before Blackjack starts."""
+
+        window = tk.Toplevel(self.root)
+        window.title("Place Your Bet")
+        window.geometry("300x220")
+        window.resizable(False, False)
+
+        # Make sure the popup stays in front
+        window.transient(self.root)
+        window.grab_set()
+
+        # Title
+        tk.Label(window, text="BLACKJACK", font="Arial 20 bold").pack(pady=(20, 5))
+
+        # Current balance
+        tk.Label(window, text=f"Balance: ${self.current_user['balance']:.2f}", font="Arial 12").pack(pady=5)
+
+        # Bet label
+        tk.Label(window, text="Enter your bet:").pack(pady=(10, 2))
+
+        bet_entry = tk.Entry(window)
+        bet_entry.pack()
+
+        def confirm_bet():
+            # Get the bet entered by the player
+            bet = bet_entry.get()
+
+            # Validate the bet
+            valid, result = self.validate_bet(bet)
+
+            if not valid:
+                messagebox.showerror("Invalid Bet", result)
+                return
+
+            # Place the bet
+            self.place_bet(result)
+            window.destroy()
+
+            # Start the game after the bet has been placed
+            self.show_blackjack()
+
+        tk.Button(
+            window,
+            text="PLACE BET",
+            bg="#d4142a",
+            fg="black",
+            font=("Arial", 12, "bold"),
+            command=confirm_bet
+        ).pack(pady=20)
+
 
     # ----- Blackjack Game -----
             
@@ -630,6 +683,21 @@ class CasinoGUI:
         # Disables hit and stand buttons so that user can't click them
         self.hit_button.config(state="disabled")
         self.stand_button.config(state="disabled")
+
+        # Update balance and statistics
+        if winner == "Player wins!":
+            # Return the original bet and add winnings
+            self.current_user["balance"] += self.current_bet * 2 
+            self.update_stats("win") 
+        
+        elif winner == "Dealer wins!": self.update_stats("loss")
+
+        elif winner == "Draw":
+            # Return the original bet because nobody won 
+            self.current_user["balance"] += self.current_bet
+
+        # Save the updated account 
+        self.save_player()
 
     
     def quit_blackjack(self):
