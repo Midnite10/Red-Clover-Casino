@@ -4,6 +4,33 @@ import random as rand
 import json
 import os
 
+class Constants:
+    # ----- General -----
+    CASINO_NAME = "Red Clover Casino"
+    WINDOW_SIZE = "800x600"
+
+    # ----- Colours -----
+    BG_COLOUR = "#1f1b1d" # Background colour
+    MAIN_COLOUR = "#d4142a" # Main red colour
+    TABLE_COLOUR = "#008000" # For blackjack table
+    CARD_BACK_COLOUR = "#9e0000" # The back of the card
+    CARD_FRONT_COLOUR = "white" # The front of the card
+    WHITE = "white" # can change to a different shade of white if needed
+
+    # ----- Fonts -----
+    TITLE_FONT = "Arial 28 bold"
+    LG_FONT = "Arial 22 bold"
+    MD_FONT = "Arial 18 bold"
+    SM_FONT = "Arial 14"
+    SM_FONT_BOLD = "Arial 14 bold"
+
+    # ----- Accounts -----
+    STARTING_BALANCE = 1000
+    MIN_USERNAME_LENGTH = 3
+    MAX_USERNAME_LENGTH = 16
+    MIN_PASSWORD_LENGTH = 8
+    MAX_PASSWORD_LENGTH = 32
+
 
 class Accounts:
     # Manages the accounts system for the casino
@@ -35,7 +62,7 @@ class Accounts:
 
         accounts[username] = {
             "password": password,
-            "balance": 1000, # 1000 is default balance for new accounts
+            "balance": Constants.STARTING_BALANCE, # default balance for new accounts
 
             "stats": {
                 "games_played": 0, # total amount of games played
@@ -79,17 +106,17 @@ class Accounts:
         if password == "":
             return "Please enter a password."
 
-        if len(username) < 3:
-            return "Username must be at least 3 characters."
+        if len(username) < Constants.MIN_USERNAME_LENGTH:
+            return f"Username must be at least {Constants.MIN_USERNAME_LENGTH} characters."
         
-        if len(username) > 16:
-            return "Username must be less than 16 characters."
+        if len(username) > Constants.MAX_USERNAME_LENGTH:
+            return f"Username must be less than {Constants.MAX_USERNAME_LENGTH} characters."
 
-        if len(password) < 4:
-            return "Password must be at least 4 characters."
+        if len(password) < Constants.MIN_PASSWORD_LENGTH:
+            return f"Password must be at least {Constants.MIN_PASSWORD_LENGTH} characters."
         
-        if len(password) > 32:
-            return "Password must be less than 32 characters."
+        if len(password) > Constants.MAX_PASSWORD_LENGTH:
+            return f"Password must be less than {Constants.MAX_PASSWORD_LENGTH} characters."
         
         accounts = self.load_accounts()
         if username in accounts:
@@ -251,8 +278,8 @@ class CasinoGUI:
     '''Class that handles the GUI, shows the windows that the user interacts with.'''
     def __init__(self, root):
         self.root = root
-        self.root.title("Red Clover Casino")
-        self.root.geometry("800x600")
+        self.root.title(Constants.CASINO_NAME)
+        self.root.geometry(Constants.WINDOW_SIZE)
         self.accounts = Accounts()
 
         # Displays header
@@ -267,7 +294,7 @@ class CasinoGUI:
         self.game_finished = False
 
         # Displays the page that the user is on
-        self.content_frame = tk.Frame(self.root, bg="#1f1b1d")
+        self.content_frame = tk.Frame(self.root, bg=Constants.BG_COLOUR)
         self.content_frame.pack(fill="both", expand=True)
 
         # Function to load welcome screen for users to login or register
@@ -281,16 +308,16 @@ class CasinoGUI:
     def show_welcome(self):
         self.clear_content()
 
-        self.welcome_frame = tk.Frame(self.content_frame, bg="#1f1b1d")
+        self.welcome_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
         self.welcome_frame.pack(fill="both", expand=True)
 
-        title = tk.Label(self.welcome_frame, text="Welcome to\nmy Casino!", bg="#1f1b1d", fg="white", font="Arial 28 bold")
+        title = tk.Label(self.welcome_frame, text="Welcome to\nmy Casino!", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
         title.pack(pady=60)
 
-        login_button = tk.Button(self.welcome_frame, text="LOGIN", bg="#d4142a", font="Arial 18 bold", command=self.login_popup)
+        login_button = tk.Button(self.welcome_frame, text="LOGIN", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, command=self.login_popup)
         login_button.pack(pady=15)
 
-        register_button = tk.Button(self.welcome_frame, text="CREATE ACCOUNT", bg="#d4142a", font="Arial 18 bold", command=self.register_popup)
+        register_button = tk.Button(self.welcome_frame, text="CREATE ACCOUNT", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, command=self.register_popup)
         register_button.pack()
 
     def login_popup(self):
@@ -379,7 +406,7 @@ class CasinoGUI:
         ).pack(pady=20)
 
     def create_header(self):
-        self.header_frame = tk.Frame(self.root, bg="#d4142a")
+        self.header_frame = tk.Frame(self.root, bg=Constants.MAIN_COLOUR)
         self.header_frame.pack(fill="x", side="top")
 
         self.header_frame.columnconfigure([0, 3], weight=2)
@@ -387,15 +414,15 @@ class CasinoGUI:
         self.header_frame.rowconfigure(0, weight=1)
 
         # Username display
-        self.username_label = tk.Label(self.header_frame, text="", bg="#d4142a", fg="black", font="Arial 16 bold")
+        self.username_label = tk.Label(self.header_frame, text="", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT)
         self.username_label.grid(row=0, column=0, sticky="nsew", pady=8)
 
         # Casino title
-        self.title_label = tk.Label(self.header_frame, text="Red Clover Casino", bg="#d4142a", fg="black", font="Arial 28 bold")
+        self.title_label = tk.Label(self.header_frame, text=Constants.CASINO_NAME, bg=Constants.MAIN_COLOUR, fg="black", font=Constants.TITLE_FONT)
         self.title_label.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=8)
 
         # Balance
-        self.balance_label = tk.Label(self.header_frame, text="", bg="#d4142a", fg="black", font="Arial 16 bold")
+        self.balance_label = tk.Label(self.header_frame, text="", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT)
         self.balance_label.grid(row=0, column=3, sticky="nsew", pady=8)
 
     def update_header(self):
@@ -407,7 +434,7 @@ class CasinoGUI:
 
         # ----- HOME PAGE    -----
 
-        self.homepage = tk.Frame(self.content_frame, bg="#1f1b1d")
+        self.homepage = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
         self.homepage.pack(fill="both", expand=True)
 
         self.homepage.rowconfigure(0, weight=1) # Header row
@@ -415,27 +442,60 @@ class CasinoGUI:
         self.homepage.columnconfigure([0, 1, 2, 3], weight=1)
 
         # Button screen
-        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0, command=self.blackjack_bet_popup)
+        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=self.blackjack_bet_popup)
         self.blackjack_button.grid(row=1, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(32, 16), sticky="nsew")
 
-        self.slots_button = tk.Button(self.homepage, text="SLOTS", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0)
+        self.slots_button = tk.Button(self.homepage, text="SLOTS", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
         self.slots_button.grid(row=1, column=2, columnspan=2, rowspan=2, padx=(16, 32), pady=(32, 16), sticky="nsew")
 
-        self.highlow_button = tk.Button(self.homepage, text="HIGH/LOW", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0)
+        self.highlow_button = tk.Button(self.homepage, text="HIGH/LOW", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
         self.highlow_button.grid(row=3, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(16, 32), sticky="nsew")
 
         # Profile/Leaderboard container
-        self.info_frame = tk.Frame(self.homepage, bg="#1f1b1d")
+        self.info_frame = tk.Frame(self.homepage, bg=Constants.BG_COLOUR)
         self.info_frame.grid(row= 3, column=2, columnspan=2, rowspan=2, padx=(16, 32), pady=(16, 32), sticky="nsew")
 
         self.info_frame.rowconfigure([0, 1], weight=1)
         self.info_frame.columnconfigure(0, weight=1)
 
-        self.leaderboard_button = tk.Button(self.info_frame, text="LEADERBOARD", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0)
+        self.leaderboard_button = tk.Button(self.info_frame, text="LEADERBOARD", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=self.show_leaderboard)
         self.leaderboard_button.grid(row=0, column=0, pady=(0, 16), sticky="nsew")
 
-        self.profile_button = tk.Button(self.info_frame, text="PROFILE", bg="#d4142a", fg="black", font="Arial 22 bold", borderwidth=0)
+        self.profile_button = tk.Button(self.info_frame, text="PROFILE", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
         self.profile_button.grid(row=1, column=0, pady=(16, 0), sticky="nsew")
+
+    def show_leaderboard(self):
+        self.clear_content()
+        lb_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
+        lb_frame.pack(fill="both", expand=True)
+
+        title = tk.Label(lb_frame, text="LEADERBOARD", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        title.pack(pady=24)
+
+        accounts = self.accounts.load_accounts()
+        leaderboard = sorted(accounts.items(), key=lambda account: account[1]["balance"], reverse=True)
+
+        header = tk.Frame(lb_frame, bg=Constants.MAIN_COLOUR)
+        header.pack(fill="x", padx=80)
+
+        header.columnconfigure([0, 1, 2], weight=1)
+
+        tk.Label(header, text="Rank", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=10)
+        tk.Label(header, text="Username", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=20).grid(row=0, column=1, sticky="we", pady=12)
+        tk.Label(header, text="Balance", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=15).grid(row=0, column=2, sticky="e", pady=12)
+
+        for rank, (username, account) in enumerate(leaderboard[:8], start=1):
+            row=tk.Frame(lb_frame, bg="#2a2528")
+            row.pack(fill="x", padx=80, pady=2)
+
+            row.columnconfigure([0, 1, 2], weight=1)
+
+            tk.Label(row, text=str(rank), bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=8)
+            tk.Label(row, text=username, bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=20).grid(row=0, column=1, sticky="w", pady=8)
+            tk.Label(row, text=f"${account['balance']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=15).grid(row=0, column=2, sticky="e", pady=8)
+        
+        back_button = tk.Button(lb_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=self.show_homepage)
+        back_button.pack(pady=30)
 
     # ----- Betting Functions -----
         
@@ -492,10 +552,10 @@ class CasinoGUI:
         window.grab_set()
 
         # Title
-        tk.Label(window, text="BLACKJACK", font="Arial 20 bold").pack(pady=(20, 5))
+        tk.Label(window, text="BLACKJACK", font=Constants.LG_FONT).pack(pady=(20, 5))
 
         # Current balance
-        tk.Label(window, text=f"Balance: ${self.current_user['balance']:.2f}", font="Arial 12").pack(pady=5)
+        tk.Label(window, text=f"Balance: ${self.current_user['balance']:.2f}", font=Constants.SM_FONT).pack(pady=5)
 
         # Bet label
         tk.Label(window, text="Enter your bet:").pack(pady=(10, 2))
@@ -521,14 +581,7 @@ class CasinoGUI:
             # Start the game after the bet has been placed
             self.show_blackjack()
 
-        tk.Button(
-            window,
-            text="PLACE BET",
-            bg="#d4142a",
-            fg="black",
-            font=("Arial", 12, "bold"),
-            command=confirm_bet
-        ).pack(pady=20)
+        tk.Button(window, text="PLACE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=confirm_bet).pack(pady=20)
 
 
     # ----- Blackjack Game -----
@@ -540,18 +593,18 @@ class CasinoGUI:
         self.game.deal_start()
 
         # Green table (background for game)
-        self.blackjack_screen = tk.Frame(self.content_frame, bg="#008000", highlightbackground="#d4142a", highlightthickness=6)
+        self.blackjack_screen = tk.Frame(self.content_frame, bg=Constants.TABLE_COLOUR, highlightbackground=Constants.MAIN_COLOUR, highlightthickness=6)
         self.blackjack_screen.pack(fill="both", expand=True, padx=64, pady=32)
 
         self.blackjack_screen.rowconfigure([0, 1, 2, 3, 4, 5, 6, 7], weight=1)
         self.blackjack_screen.columnconfigure([0, 1, 2, 3, 4, 5, 6], weight=1)
 
         # Dealer cards
-        self.dealer_frame = tk.Frame(self.blackjack_screen, bg="#008000")
+        self.dealer_frame = tk.Frame(self.blackjack_screen, bg=Constants.TABLE_COLOUR)
         self.dealer_frame.grid(row=1, column=2, columnspan=3)
 
         # Dealer label
-        self.dealer_total = tk.Label(self.blackjack_screen, text="Dealer", bg="#008000", font="Arial 18")
+        self.dealer_total = tk.Label(self.blackjack_screen, text="Dealer", bg=Constants.TABLE_COLOUR, font=Constants.MD_FONT)
         self.dealer_total.grid(row=2, column=3)
 
         # Deck
@@ -559,11 +612,11 @@ class CasinoGUI:
         self.deck_card.grid(row=2, column=0)
 
         # Player label
-        self.player_total = tk.Label(self.blackjack_screen, text="You", bg="#008000", font="Arial 18")
+        self.player_total = tk.Label(self.blackjack_screen, text="You", bg=Constants.TABLE_COLOUR, font=Constants.MD_FONT)
         self.player_total.grid(row=4, column=3)
 
         # Player cards
-        self.player_frame = tk.Frame(self.blackjack_screen, bg="#008000")
+        self.player_frame = tk.Frame(self.blackjack_screen, bg=Constants.TABLE_COLOUR)
         self.player_frame.grid(row=5, column=1, columnspan=5)
 
         # Draw starting cards
@@ -573,7 +626,7 @@ class CasinoGUI:
         self.create_blackjack_buttons()
 
         # Winner label
-        self.result_label = tk.Label(self.content_frame, text="", bg="#1f1b1d", fg="white", font="Arial 18 bold")
+        self.result_label = tk.Label(self.content_frame, text="", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.MD_FONT)
         self.result_label.pack(pady=10)
 
         winner = self.game.check_natural_blackjack()
@@ -585,21 +638,21 @@ class CasinoGUI:
         # This is how each card is displayer
         if hidden:
             # If a card is supposed to be hidden
-            background = "#9e0000"
-            foreground = "white"
+            background = Constants.CARD_BACK_COLOUR
+            foreground = Constants.WHITE
             text = "?"
 
         else:
             # All visible cards
             value, suit = card
-            background = "white"
+            background = Constants.CARD_FRONT_COLOUR
             if suit == "♠" or suit == "♣":
                 foreground = "black"
             else:
                 foreground = "red"
             text = f"{value}\n{suit}"
 
-        card_label = tk.Label(parent, text=text, bg=background, fg=foreground, width=4, height=3, relief="solid", borderwidth=2, font="Arial 18 bold")
+        card_label = tk.Label(parent, text=text, bg=background, fg=foreground, width=4, height=3, relief="solid", borderwidth=2, font=Constants.MD_FONT)
 
         return card_label
     
@@ -643,18 +696,18 @@ class CasinoGUI:
     
     def create_blackjack_buttons(self):
         # Buttons for user to press
-        self.button_frame = tk.Frame(self.content_frame, bg="#1f1b1d")
+        self.button_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
         self.button_frame.pack(fill="x", pady=15)
 
         # Hit button
-        self.hit_button = tk.Button(self.button_frame, text="HIT", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.hit)
+        self.hit_button = tk.Button(self.button_frame, text="HIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.hit)
         self.hit_button.pack(side="left", expand=True, padx=20)
 
         # Stand button
-        self.stand_button = tk.Button(self.button_frame, text="STAND", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.stand)
+        self.stand_button = tk.Button(self.button_frame, text="STAND", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.stand)
         self.stand_button.pack(side="left", expand=True, padx=20)
 
-        self.quit_button = tk.Button(self.button_frame, text="QUIT", bg="#d4142a", fg="black", font=("Arial", 16, "bold"), command=self.quit_blackjack)
+        self.quit_button = tk.Button(self.button_frame, text="QUIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.quit_blackjack)
         self.quit_button.pack(side="left", expand=True, padx=20)
     
     def hit(self):
