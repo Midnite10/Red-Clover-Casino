@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import random as rand
 import json
 import os
 
 class Constants:
+    """Settings Class. Can change game settings here"""
     # ----- General -----
     CASINO_NAME = "Red Clover Casino"
     WINDOW_SIZE = "800x600"
@@ -16,6 +17,7 @@ class Constants:
     CARD_BACK_COLOUR = "#9e0000" # The back of the card
     CARD_FRONT_COLOUR = "white" # The front of the card
     WHITE = "white" # can change to a different shade of white if needed
+    GREY = "#2a2528" # grey colour to differ from bg colour
 
     # ----- Fonts -----
     TITLE_FONT = "Arial 28 bold"
@@ -31,11 +33,26 @@ class Constants:
     MIN_PASSWORD_LENGTH = 8
     MAX_PASSWORD_LENGTH = 32
 
+    # ----- Betting -----
+    MIN_BET = 1 # minimum amount of dollars user can bet
+
+    # ----- Blackjack -----
+    PAYOUT_MULTIPLIER = 2
+    BLACKJACK_MULTIPLIER = 2.5
+    STARTING_CARDS = 2
+    ADDITIONAL_CARDS = 1
+    BLACKJACK_LIMIT = 21 # Where the line is set (21 is default)
+    DEALER_LIMIT = 17 # Where the dealer stops hitting
+
+    # ----- Slot Machine -----
+    SLOT_REEL_COUNT = 3
+    SLOT_SPIN_TIME = 3
+
 
 class Accounts:
     # Manages the accounts system for the casino
     def __init__(self):
-        folder = os.path.dirname(os.path.abspath(__file__)) # Found from geeksforgeeks.org. Only used to make sure the file is in the right place so that you can view it easily
+        folder = os.path.dirname(os.path.abspath(__file__)) # Found from geeksforgeeks.org. Only used to make sure the json file is in the right place so that you can view it easily
         self.filename = os.path.join(folder, "accounts.json") # json file containing all accounts
 
     def load_accounts(self):
@@ -209,7 +226,7 @@ class BlackJack:
             else:
                 total += int(value)
         
-        while total > 21 and aces:
+        while total > Constants.BLACKJACK_LIMIT and aces:
             total -= 10
             aces -= 1
         
@@ -217,7 +234,7 @@ class BlackJack:
     
     def natural_blackjack(self, hand):
         # Returns True if the hand is a natural blackjack
-        return len(hand) == 2 and self.hand_value(hand) == 21
+        return len(hand) == Constants.STARTING_CARDS and self.hand_value(hand) == Constants.BLACKJACK_LIMIT
 
     def check_natural_blackjack(self):
         player = self.natural_blackjack(self.player_hand)
@@ -236,22 +253,22 @@ class BlackJack:
 
     def deal_start(self):
         # Starts the game by giving the player and dealer 2 cards each
-        self.player_hand.extend(self.deck.deal_cards(2))
-        self.dealer_hand.extend(self.deck.deal_cards(2))
+        self.player_hand.extend(self.deck.deal_cards(Constants.STARTING_CARDS))
+        self.dealer_hand.extend(self.deck.deal_cards(Constants.STARTING_CARDS))
 
     
     def hit(self):
         # When player clicks the hit button, this function draws an extra card
-        self.player_hand.extend(self.deck.deal_cards(1))
+        self.player_hand.extend(self.deck.deal_cards(Constants.ADDITIONAL_CARDS))
 
-        if self.hand_value(self.player_hand) > 21:
+        if self.hand_value(self.player_hand) > Constants.BLACKJACK_LIMIT:
             self.game_over = True
 
     
     def dealer_turn(self):
         # Computer program to run the dealers turn.
-        while self.hand_value(self.dealer_hand) < 17:
-            self.dealer_hand.extend(self.deck.deal_cards(1))
+        while self.hand_value(self.dealer_hand) < Constants.DEALER_LIMIT:
+            self.dealer_hand.extend(self.deck.deal_cards(Constants.ADDITIONAL_CARDS))
     
 
     def find_winner(self):
@@ -259,10 +276,10 @@ class BlackJack:
         player = self.hand_value(self.player_hand)
         dealer = self.hand_value(self.dealer_hand)
 
-        if player > 21:
+        if player > Constants.BLACKJACK_LIMIT:
             return "Dealer wins!"
 
-        elif dealer > 21:
+        elif dealer > Constants.BLACKJACK_LIMIT:
             return "Player wins!"
         
         elif player > dealer:
@@ -326,15 +343,16 @@ class CasinoGUI:
             window.title("Login")
             window.geometry("300x220")
             window.resizable(False, False)
+            window.config(bg=Constants.BG_COLOUR)
 
             # Username entry
-            tk.Label(window, text="Username").pack(pady=(15,0))
+            tk.Label(window, text="Username", bg=Constants.BG_COLOUR, fg=Constants.WHITE).pack(pady=(15,0))
             username_entry = tk.Entry(window)
             username_entry.pack()
 
             # Password entry
-            tk.Label(window, text="Password").pack(pady=(10,0))
-            password_entry = tk.Entry(window, show="*")
+            tk.Label(window, text="Password", bg=Constants.BG_COLOUR, fg=Constants.WHITE).pack(pady=(10,0))
+            password_entry = tk.Entry(window, show="*") # makes password appear as asterisks rather than the actual password
             password_entry.pack()
 
             def submit():
@@ -358,19 +376,20 @@ class CasinoGUI:
         window.title("Create Account")
         window.geometry("300x260")
         window.resizable(False, False)
+        window.config(bg=Constants.BG_COLOUR)
 
         # Username entry
-        tk.Label(window, text="Username").pack(pady=(15, 0))
+        tk.Label(window, text="Username", bg=Constants.BG_COLOUR, fg=Constants.WHITE).pack(pady=(15, 0))
         username_entry = tk.Entry(window)
         username_entry.pack()
 
         # Password entry
-        tk.Label(window, text="Password").pack(pady=(10, 0))
+        tk.Label(window, text="Password", bg=Constants.BG_COLOUR, fg=Constants.WHITE).pack(pady=(10, 0))
         password_entry = tk.Entry(window, show="*")
         password_entry.pack()
 
         # Password confirmation (repeat password)
-        tk.Label(window, text="Confirm Password").pack(pady=(10, 0))
+        tk.Label(window, text="Confirm Password", bg=Constants.BG_COLOUR, fg=Constants.WHITE).pack(pady=(10, 0))
         confirm_entry = tk.Entry(window, show="*")
         confirm_entry.pack()
 
@@ -442,7 +461,7 @@ class CasinoGUI:
         self.homepage.columnconfigure([0, 1, 2, 3], weight=1)
 
         # Button screen
-        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=self.blackjack_bet_popup)
+        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=lambda: self.show_bet_screen(self.show_blackjack))
         self.blackjack_button.grid(row=1, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(32, 16), sticky="nsew")
 
         self.slots_button = tk.Button(self.homepage, text="SLOTS", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
@@ -461,7 +480,7 @@ class CasinoGUI:
         self.leaderboard_button = tk.Button(self.info_frame, text="LEADERBOARD", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=self.show_leaderboard)
         self.leaderboard_button.grid(row=0, column=0, pady=(0, 16), sticky="nsew")
 
-        self.profile_button = tk.Button(self.info_frame, text="PROFILE", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
+        self.profile_button = tk.Button(self.info_frame, text="PROFILE", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=self.show_profile)
         self.profile_button.grid(row=1, column=0, pady=(16, 0), sticky="nsew")
 
     def show_leaderboard(self):
@@ -480,9 +499,9 @@ class CasinoGUI:
 
         header.columnconfigure([0, 1, 2], weight=1)
 
-        tk.Label(header, text="Rank", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=10)
-        tk.Label(header, text="Username", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=20).grid(row=0, column=1, sticky="we", pady=12)
-        tk.Label(header, text="Balance", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=15).grid(row=0, column=2, sticky="e", pady=12)
+        tk.Label(header, text="Rank", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=8)
+        tk.Label(header, text="Username", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=20).grid(row=0, column=1, sticky="we", pady=8)
+        tk.Label(header, text="Balance", bg=Constants.MAIN_COLOUR, fg="black",  font=Constants.SM_FONT_BOLD, width=15).grid(row=0, column=2, sticky="e", pady=8)
 
         for rank, (username, account) in enumerate(leaderboard[:8], start=1):
             row=tk.Frame(lb_frame, bg="#2a2528")
@@ -490,12 +509,78 @@ class CasinoGUI:
 
             row.columnconfigure([0, 1, 2], weight=1)
 
-            tk.Label(row, text=str(rank), bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=8)
-            tk.Label(row, text=username, bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=20).grid(row=0, column=1, sticky="w", pady=8)
-            tk.Label(row, text=f"${account['balance']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=15).grid(row=0, column=2, sticky="e", pady=8)
+            tk.Label(row, text=str(rank), bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=8).grid(row=0, column=0, sticky="w", pady=4)
+            tk.Label(row, text=username, bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=20).grid(row=0, column=1, sticky="w", pady=4)
+            tk.Label(row, text=f"${account['balance']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=15).grid(row=0, column=2, sticky="e", pady=4)
         
         back_button = tk.Button(lb_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=self.show_homepage)
-        back_button.pack(pady=30)
+        back_button.pack(pady=24)
+
+    def show_profile(self):
+        self.clear_content()
+
+        profile_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
+        profile_frame.pack(fill="both", expand=True)
+
+        title = tk.Label(profile_frame, text="PROFILE", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        title.pack(pady=(16, 12))
+
+        # ----- Account information -----
+
+        account_frame = tk.Frame(profile_frame, bg=Constants.GREY)
+        account_frame.pack(fill="x", padx=120, pady=8)
+
+        # Configure the two columns
+        account_frame.columnconfigure(0, weight=1)
+        account_frame.columnconfigure(1, weight=2)
+
+        # Username
+        tk.Label(account_frame, text="Username", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=0, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(account_frame, text=self.current_username, bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=0, column=1, sticky="e", padx=20, pady=6)
+
+        # Balance
+        tk.Label(account_frame, text="Balance", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=1, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(account_frame, text=f"${self.current_user['balance']:.2f}", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=1, column=1, sticky="e", padx=20, pady=6)
+
+        # ----- Statistics -----
+
+        stats_title = tk.Label(profile_frame, text="STATISTICS", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.LG_FONT)
+        stats_title.pack(pady=(16, 8))
+
+        stats_frame = tk.Frame(profile_frame, bg=Constants.GREY)
+        stats_frame.pack(fill="x", padx=120, pady=8)
+
+        # Configure the two columns
+        stats_frame.columnconfigure(0, weight=1)
+        stats_frame.columnconfigure(1, weight=2)
+
+        stats = self.current_user["stats"]
+
+        # Games Played
+        tk.Label(stats_frame, text="Games Played", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=0, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(stats_frame, text=str(stats["games_played"]),  bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=0, column=1, sticky="e", padx=20, pady=6)
+
+        # Wins
+        tk.Label(stats_frame, text="Wins", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=1, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(stats_frame, text=str(stats["wins"]), bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=1, column=1, sticky="e", padx=20, pady=6)
+
+        # Losses
+        tk.Label(stats_frame, text="Losses", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=2, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(stats_frame, text=str(stats["losses"]), bg="#2a2528", fg=Constants.WHITE,  font=Constants.SM_FONT ).grid(row=2, column=1, sticky="e", padx=20, pady=6)
+
+        # Money Won
+        tk.Label(stats_frame, text="Money Won", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD ).grid(row=3, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(stats_frame, text=f"${stats['money_won']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=3, column=1, sticky="e", padx=20, pady=6)
+
+        # Money Lost
+        tk.Label(stats_frame, text="Money Lost", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=4, column=0, sticky="w", padx=20, pady=6)
+        tk.Label(stats_frame, text=f"${stats['money_lost']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=4, column=1, sticky="e", padx=20, pady=6)
+
+        # ----- Back button -----
+
+        back_button = tk.Button(profile_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=self.show_homepage)
+        back_button.pack(pady=16)
+
 
     # ----- Betting Functions -----
         
@@ -518,8 +603,8 @@ class CasinoGUI:
         except ValueError:
             return False, "Please enter a whole number."
 
-        if bet <= 0:
-            return False, "Bet must be greater than $0."
+        if bet < Constants.MIN_BET:
+            return False, f"Bet must be at least ${Constants.MIN_BET}."
 
         if bet > self.current_user["balance"]:
             return False, "You do not have enough money."
@@ -539,49 +624,87 @@ class CasinoGUI:
             stats["losses"] += 1
             stats["money_lost"] += self.current_bet
     
-    def blackjack_bet_popup(self):
-        """Shows a popup allowing the player to place a bet before Blackjack starts."""
+    def show_bet_screen(self, game_function):
 
-        window = tk.Toplevel(self.root)
-        window.title("Place Your Bet")
-        window.geometry("300x220")
-        window.resizable(False, False)
+        self.clear_content()
 
-        # Make sure the popup stays in front
-        window.transient(self.root)
-        window.grab_set()
+        # Main betting screen
+        bet_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
+        bet_frame.pack(fill="both", expand=True)
 
-        # Title
-        tk.Label(window, text="BLACKJACK", font=Constants.LG_FONT).pack(pady=(20, 5))
+        bet_frame.columnconfigure([0, 1, 2], weight=1)
+        bet_frame.rowconfigure([0, 5], weight=2)
+        bet_frame.rowconfigure([1, 2, 3, 4], weight=1)
 
-        # Current balance
-        tk.Label(window, text=f"Balance: ${self.current_user['balance']:.2f}", font=Constants.SM_FONT).pack(pady=5)
+        # ----- Title -----
 
-        # Bet label
-        tk.Label(window, text="Enter your bet:").pack(pady=(10, 2))
+        title = tk.Label(bet_frame, text="PLACE YOUR BET", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        title.grid(row=0, column=0, columnspan=3, sticky="s", pady=(20, 10))
 
-        bet_entry = tk.Entry(window)
-        bet_entry.pack()
+        balance_label = tk.Label(bet_frame, text=f"Balance: ${self.current_user['balance']:.2f}", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.MD_FONT)
+        balance_label.grid(row=1, column=1, sticky="n", pady=10)
+
+        bet_label = tk.Label(bet_frame, text="Select your bet:", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD)
+        bet_label.grid(row=2, column=1, sticky="s", pady=5)
+
+        # ----- Create bet options based on balance -----
+
+        bet_options = []
+
+        standard_bets = [1, 5, 10, 25, 50, 100, 250, 500]
+
+        for bet in standard_bets:
+            if self.current_user["balance"] >= bet:
+                bet_options.append(f"${bet}")
+
+        # Add ALL IN if user can afford the minimum bet
+        if self.current_user["balance"] >= Constants.MIN_BET:
+            bet_options.append("ALL IN")
+
+        # ----- Editable dropdown -----
+
+        selected_bet = tk.StringVar()
+
+        bet_dropdown = ttk.Combobox(bet_frame, textvariable=selected_bet, values=bet_options, state="normal", font=Constants.SM_FONT, width=15)
+        bet_dropdown.grid(row=3, column=1, sticky="n", pady=10)
+
+        # Set default value
+        if bet_options:
+            bet_dropdown.set(bet_options[0])
+
+        # ----- Confirm bet -----
 
         def confirm_bet():
-            # Get the bet entered by the player
-            bet = bet_entry.get()
 
-            # Validate the bet
-            valid, result = self.validate_bet(bet)
+            choice = selected_bet.get().strip()
 
-            if not valid:
-                messagebox.showerror("Invalid Bet", result)
+            if choice == "":
+                messagebox.showerror("Invalid Bet", "Please enter or select a bet.")
                 return
 
-            # Place the bet
-            self.place_bet(result)
-            window.destroy()
+            if choice.upper() == "ALL IN":
+                bet = self.current_user["balance"]
 
-            # Start the game after the bet has been placed
+            else:
+                # Allow user to type "$###" or "###"
+                choice = choice.replace("$", "").strip()
+                valid, result = self.validate_bet(choice)
+
+                if not valid:
+                    messagebox.showerror("Invalid Bet", result)
+                    return
+
+                bet = result
+
+            self.place_bet(bet)
             self.show_blackjack()
+            game_function()
 
-        tk.Button(window, text="PLACE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=confirm_bet).pack(pady=20)
+        place_button = tk.Button(bet_frame, text="PLACE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, command=confirm_bet)
+        place_button.grid(row=4, column=1, sticky="nsew", padx=80, pady=15)
+
+        back_button = tk.Button(bet_frame, text="BACK", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, borderwidth=0, command=self.show_homepage)
+        back_button.grid(row=5, column=1, sticky="n", pady=20)
 
 
     # ----- Blackjack Game -----
@@ -740,7 +863,7 @@ class CasinoGUI:
         # Update balance and statistics
         if winner == "Player wins!":
             # Return the original bet and add winnings
-            self.current_user["balance"] += self.current_bet * 2 
+            self.current_user["balance"] += self.current_bet * Constants.PAYOUT_MULTIPLIER 
             self.update_stats("win") 
         
         elif winner == "Dealer wins!": self.update_stats("loss")
@@ -748,6 +871,8 @@ class CasinoGUI:
         elif winner == "Draw":
             # Return the original bet because nobody won 
             self.current_user["balance"] += self.current_bet
+            stats = self.current_user["stats"]
+            stats["games_played"] += 1
 
         # Save the updated account 
         self.save_player()
