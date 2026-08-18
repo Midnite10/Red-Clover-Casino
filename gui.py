@@ -3,6 +3,7 @@ from tkinter import messagebox, ttk
 import random as rand
 import json
 import os
+import time
 
 class Constants:
     """Settings Class. Can change game settings here"""
@@ -18,6 +19,9 @@ class Constants:
     CARD_FRONT_COLOUR = "white" # The front of the card
     WHITE = "white" # can change to a different shade of white if needed
     GREY = "#2a2528" # grey colour to differ from bg colour
+    WINNER = "#00c853" # winning green colour
+    LOSER = "#ff1744" # losing red colour
+    DRAW = "#ffd600" # draw yellow colour
 
     # ----- Fonts -----
     TITLE_FONT = "Arial 28 bold"
@@ -25,6 +29,12 @@ class Constants:
     MD_FONT = "Arial 18 bold"
     SM_FONT = "Arial 14"
     SM_FONT_BOLD = "Arial 14 bold"
+
+    # ----- Buttons -----
+    LG_BUTTON_WIDTH = 24
+    MD_BUTTON_WIDTH = 16
+    SM_BUTTON_WIDTH = 8
+    BTN_HEIGHT = 1
 
     # ----- Accounts -----
     STARTING_BALANCE = 1000
@@ -38,15 +48,26 @@ class Constants:
 
     # ----- Blackjack -----
     PAYOUT_MULTIPLIER = 2
-    BLACKJACK_MULTIPLIER = 2.5
     STARTING_CARDS = 2
     ADDITIONAL_CARDS = 1
-    BLACKJACK_LIMIT = 21 # Where the line is set (21 is default)
+    BLACKJACK_LIMIT = 21 # Where the blackjack line is set (21 is default)
     DEALER_LIMIT = 17 # Where the dealer stops hitting
+    DEALER_DRAW_DELAY = 1000 # milliseconds
 
     # ----- Slot Machine -----
     SLOT_REEL_COUNT = 3
+    SLOT_SYMBOLS = {
+        "🍒": {"weight": 40, "payout": 2},
+        "🍋": {"weight": 30, "payout": 3},
+        "🍇": {"weight": 15, "payout": 10},
+        "⭐": {"weight": 10, "payout": 25},
+        "🍀": {"weight": 5, "payout": 100}
+    }
     SLOT_SPIN_TIME = 3
+    SLOT_SPIN_DELAY = 100
+
+    # ----- Game results -----
+    GAME_RESULT_DELAY = 2000 # time in milliseconds
 
 
 class Accounts:
@@ -65,7 +86,6 @@ class Accounts:
             return {}
     
     def save_accounts(self, accounts):
-        print(os.getcwd())
         # saves accounts info to json file
         with open(self.filename, "w") as file:
             json.dump(accounts, file, indent=4)
@@ -290,7 +310,47 @@ class BlackJack:
         
         return "Draw"
 
+class SlotMachine:
+    """Slot machine game logic. Creates and spins the reels."""
+    def __init__(self):
+        self.reels = []
+        self.result = None
+        self.payout = 0
 
+    def get_random_symbol(self):
+        # Gets the symbols and their weights
+        symbols = list(Constants.SLOT_SYMBOLS.keys())
+        weights = [symbol["weight"] for symbol in Constants.SLOT_SYMBOLS.values()]
+
+        return rand.choices(symbols, weights=weights, k=1)[0]
+
+    def spin(self):
+        # Creates a random result for each reel
+        self.reels = []
+        for i in range(Constants.SLOT_REEL_COUNT):
+            self.reels.append(self.get_random_symbol())
+
+        self.result = self.check_result()
+        return self.reels
+
+    def check_result(self):
+        # Checks if all three symbols match
+        if self.reels[0] == self.reels[1] and self.reels[1] == self.reels[2]:
+            self.payout = Constants.SLOT_SYMBOLS[self.reels[0]]["payout"]
+            return "jackpot"
+        
+        # # checks if two out of three symbols match
+        # elif self.reels[0] == self.reels[1] or self.reels[1] == self.reels[2] or self.reels[0] == self.reels[2]:
+        #     self.payout = Constants.SLOT_SYMBOLS[self.reels[0]]["payout"] * Constants.SLOT_TWO_MATCH_MULTIPLIER
+        #     return "two"
+
+        self.payout = 0
+        return "loss"
+    
+    def get_winnings(self, bet):
+        # Calculates how much money the player receives
+        return bet * self.payout
+    
 class CasinoGUI:
     '''Class that handles the GUI, shows the windows that the user interacts with.'''
     def __init__(self, root):
@@ -317,6 +377,21 @@ class CasinoGUI:
         # Function to load welcome screen for users to login or register
         self.show_welcome()
 
+    def logout(self):
+        """Confirms logout before returning to the welcome screen."""
+        confirm = messagebox.askyesno("Log Out", "Are you sure you want to log out?")
+
+        if not confirm:
+            return
+
+        self.current_username = ""
+        self.current_user = None
+        self.current_bet = 0
+        self.game_finished = False
+
+        self.show_welcome()
+        self.update_header()
+
     def clear_content(self):
         # Resets the frame before showing a new page
         for widget in self.content_frame.winfo_children(): # I used tutorialspoint.com to find this tkinter function
@@ -331,10 +406,10 @@ class CasinoGUI:
         title = tk.Label(self.welcome_frame, text="Welcome to\nmy Casino!", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
         title.pack(pady=60)
 
-        login_button = tk.Button(self.welcome_frame, text="LOGIN", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, command=self.login_popup)
+        login_button = tk.Button(self.welcome_frame, text="LOGIN", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.login_popup)
         login_button.pack(pady=15)
 
-        register_button = tk.Button(self.welcome_frame, text="CREATE ACCOUNT", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, command=self.register_popup)
+        register_button = tk.Button(self.welcome_frame, text="CREATE ACCOUNT", bg=Constants.MAIN_COLOUR, font=Constants.MD_FONT, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.register_popup)
         register_button.pack()
 
     def login_popup(self):
@@ -418,11 +493,7 @@ class CasinoGUI:
             else:
                 messagebox.showerror("Account Creation Failed", result) # Error message if the process failed
 
-        tk.Button(
-            window,
-            text="Create Account",
-            command=submit
-        ).pack(pady=20)
+        tk.Button(window, text="Create Account", command=submit).pack(pady=20)
 
     def create_header(self):
         self.header_frame = tk.Frame(self.root, bg=Constants.MAIN_COLOUR)
@@ -461,13 +532,13 @@ class CasinoGUI:
         self.homepage.columnconfigure([0, 1, 2, 3], weight=1)
 
         # Button screen
-        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=lambda: self.show_bet_screen(self.show_blackjack))
+        self.blackjack_button = tk.Button(self.homepage, text="BLACKJACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=lambda: self.show_bet_screen("BLACKJACK", self.show_blackjack))
         self.blackjack_button.grid(row=1, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(32, 16), sticky="nsew")
 
-        self.slots_button = tk.Button(self.homepage, text="SLOTS", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
+        self.slots_button = tk.Button(self.homepage, text="SLOTS", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0, command=lambda: self.show_bet_screen("SLOT MACHINE", self.show_slots))
         self.slots_button.grid(row=1, column=2, columnspan=2, rowspan=2, padx=(16, 32), pady=(32, 16), sticky="nsew")
 
-        self.highlow_button = tk.Button(self.homepage, text="HIGH/LOW", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
+        self.highlow_button = tk.Button(self.homepage, text="COMING SOON...", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.LG_FONT, borderwidth=0)
         self.highlow_button.grid(row=3, column=0, columnspan=2, rowspan=2, padx=(32, 16), pady=(16, 32), sticky="nsew")
 
         # Profile/Leaderboard container
@@ -513,7 +584,7 @@ class CasinoGUI:
             tk.Label(row, text=username, bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=20).grid(row=0, column=1, sticky="w", pady=4)
             tk.Label(row, text=f"${account['balance']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT, width=15).grid(row=0, column=2, sticky="e", pady=4)
         
-        back_button = tk.Button(lb_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=self.show_homepage)
+        back_button = tk.Button(lb_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_homepage)
         back_button.pack(pady=24)
 
     def show_profile(self):
@@ -576,10 +647,15 @@ class CasinoGUI:
         tk.Label(stats_frame, text="Money Lost", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT_BOLD).grid(row=4, column=0, sticky="w", padx=20, pady=6)
         tk.Label(stats_frame, text=f"${stats['money_lost']:.2f}", bg="#2a2528", fg=Constants.WHITE, font=Constants.SM_FONT).grid(row=4, column=1, sticky="e", padx=20, pady=6)
 
-        # ----- Back button -----
+        # ----- Profile buttons -----
+        button_frame = tk.Frame(profile_frame, bg=Constants.BG_COLOUR)
+        button_frame.pack(pady=16)
 
-        back_button = tk.Button(profile_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.SM_FONT_BOLD, command=self.show_homepage)
-        back_button.pack(pady=16)
+        back_button = tk.Button(button_frame, text="BACK", bg=Constants.MAIN_COLOUR, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_homepage)
+        back_button.pack(side="left", pady=10)
+
+        logout_button = tk.Button(button_frame, text="LOG OUT", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.logout)
+        logout_button.pack(side="left", padx=10)
 
 
     # ----- Betting Functions -----
@@ -624,7 +700,7 @@ class CasinoGUI:
             stats["losses"] += 1
             stats["money_lost"] += self.current_bet
     
-    def show_bet_screen(self, game_function):
+    def show_bet_screen(self, game_name, game_function):
 
         self.clear_content()
 
@@ -651,7 +727,7 @@ class CasinoGUI:
 
         bet_options = []
 
-        standard_bets = [1, 5, 10, 25, 50, 100, 250, 500]
+        standard_bets = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000]
 
         for bet in standard_bets:
             if self.current_user["balance"] >= bet:
@@ -697,21 +773,89 @@ class CasinoGUI:
                 bet = result
 
             self.place_bet(bet)
-            self.show_blackjack()
             game_function()
 
-        place_button = tk.Button(bet_frame, text="PLACE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, command=confirm_bet)
+        place_button = tk.Button(bet_frame, text="PLACE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=confirm_bet)
         place_button.grid(row=4, column=1, sticky="nsew", padx=80, pady=15)
 
-        back_button = tk.Button(bet_frame, text="BACK", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, borderwidth=0, command=self.show_homepage)
+        back_button = tk.Button(bet_frame, text="BACK", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_homepage)
         back_button.grid(row=5, column=1, sticky="n", pady=20)
 
+    def show_game_result(self, game_name, result, amount, game_function):
+        """Shows the result of a completed game."""
+
+        self.clear_content()
+
+        # ----- Main result screen -----
+
+        result_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
+        result_frame.pack(fill="both", expand=True)
+
+        # Grid configuration
+        result_frame.columnconfigure([0, 2], weight=1)
+        result_frame.columnconfigure(1, weight=2)
+            
+        result_frame.rowconfigure([0, 5], weight=2)
+        result_frame.rowconfigure([1, 2, 3, 4], weight=1)
+
+        # ----- Game name -----
+
+        game_label = tk.Label(result_frame, text=game_name, bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        game_label.grid(row=0, column=0, columnspan=3, sticky="s", pady=(20, 5))
+
+        # ----- Result -----
+
+        if result == "win":
+            result_text = "YOU WIN!"
+            result_colour = Constants.WINNER
+
+        elif result == "loss":
+            result_text = "YOU LOSE!"
+            result_colour = Constants.LOSER
+
+        else:
+            result_text = "DRAW"
+            result_colour = Constants.DRAW
+
+        result_label = tk.Label(result_frame, text=result_text, bg=Constants.BG_COLOUR, fg=result_colour, font=Constants.LG_FONT)
+        result_label.grid(row=1, column=1, pady=10)
+
+        # ----- Money result -----
+
+        if result == "win":
+            money_text = f"You won ${amount:.2f}"
+
+        elif result == "loss":
+            money_text = f"You lost ${amount:.2f}"
+
+        else:
+            money_text = "Your bet was returned"
+
+        money_label = tk.Label(result_frame, text=money_text, bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.MD_FONT)
+        money_label.grid(row=2, column=1, pady=10)
+
+        # ----- Updated balance -----
+
+        balance_label = tk.Label(result_frame, text=f"Balance: ${self.current_user['balance']:.2f}", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.MD_FONT)
+        balance_label.grid(row=3, column=1, pady=10)
+
+        # ----- Play again -----
+
+        play_again_button = tk.Button(result_frame, text="PLAY AGAIN", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=lambda: self.show_bet_screen(game_name, game_function))
+        play_again_button.grid(row=4, column=1, sticky="nsew", padx=80, pady=10)
+
+        # ----- Home button -----
+
+        home_button = tk.Button(result_frame, text="HOME", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_homepage)
+        home_button.grid(row=5, column=1, sticky="n", pady=20)
 
     # ----- Blackjack Game -----
             
     def show_blackjack(self):
         # Starts a new game
         self.clear_content()
+
+        self.game_finished = False
         self.game = BlackJack()
         self.game.deal_start()
 
@@ -755,7 +899,7 @@ class CasinoGUI:
         winner = self.game.check_natural_blackjack()
 
         if winner is not None:
-            self.finish_game()
+            self.finish_blackjack()
 
     def create_card(self, parent, card=None, hidden=False):
         # This is how each card is displayer
@@ -823,14 +967,14 @@ class CasinoGUI:
         self.button_frame.pack(fill="x", pady=15)
 
         # Hit button
-        self.hit_button = tk.Button(self.button_frame, text="HIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.hit)
+        self.hit_button = tk.Button(self.button_frame, text="HIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.hit)
         self.hit_button.pack(side="left", expand=True, padx=20)
 
         # Stand button
-        self.stand_button = tk.Button(self.button_frame, text="STAND", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.stand)
+        self.stand_button = tk.Button(self.button_frame, text="STAND", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.stand)
         self.stand_button.pack(side="left", expand=True, padx=20)
 
-        self.quit_button = tk.Button(self.button_frame, text="QUIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, command=self.quit_blackjack)
+        self.quit_button = tk.Button(self.button_frame, text="QUIT", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.quit_blackjack)
         self.quit_button.pack(side="left", expand=True, padx=20)
     
     def hit(self):
@@ -839,46 +983,192 @@ class CasinoGUI:
 
         # If user busts
         if self.game.game_over:
-            self.finish_game()
+            self.finish_blackjack()
         
         # If user gets exactly 21
         if self.game.hand_value(self.game.player_hand) == 21:
             self.stand()
     
     def stand(self):
-        # Plays dealers turn
-        self.game.dealer_turn()
-        self.finish_game()
-    
-    def finish_game(self):
-        self.update_blackjack_gui(True)
-        # Finds and displays winner
-        winner = self.game.find_winner()
-        self.result_label.config(text=winner)
-
-        # Disables hit and stand buttons so that user can't click them
+        # Disable buttons while dealer is playing
         self.hit_button.config(state="disabled")
         self.stand_button.config(state="disabled")
 
-        # Update balance and statistics
-        if winner == "Player wins!":
-            # Return the original bet and add winnings
-            self.current_user["balance"] += self.current_bet * Constants.PAYOUT_MULTIPLIER 
-            self.update_stats("win") 
-        
-        elif winner == "Dealer wins!": self.update_stats("loss")
+        self.update_blackjack_gui(True)
+        self.root.after(Constants.DEALER_DRAW_DELAY, self.dealer_draw)
 
-        elif winner == "Draw":
-            # Return the original bet because nobody won 
+    def dealer_draw(self):
+        """Draws the dealer's cards one at a time with a delay."""
+
+        # If dealer has reached 17 or higher, finish the game
+        if self.game.hand_value(self.game.dealer_hand) >= Constants.DEALER_LIMIT:
+            self.finish_blackjack()
+            return
+
+        # Draw one card
+        self.game.dealer_hand.extend(self.game.deck.deal_cards(Constants.ADDITIONAL_CARDS))
+
+        # Update the GUI so the new card is visible
+        self.update_blackjack_gui(True)
+        self.root.after(Constants.DEALER_DRAW_DELAY, self.dealer_draw)
+    
+    def finish_blackjack(self):
+        if self.game_finished:
+            return
+        
+        self.game_finished = True
+
+        self.update_blackjack_gui(True)
+        winner = self.game.find_winner()
+
+        # Determine result
+        if winner == "Player wins!":
+            self.current_user["balance"] += (self.current_bet * Constants.PAYOUT_MULTIPLIER)
+            self.update_stats("win")
+            result = "win"
+
+        elif winner == "Dealer wins!":
+            self.update_stats("loss")
+            result = "loss"
+
+        else:
             self.current_user["balance"] += self.current_bet
             stats = self.current_user["stats"]
             stats["games_played"] += 1
+            result = "draw"
 
-        # Save the updated account 
+        amount = self.current_bet
         self.save_player()
+        self.root.after(Constants.GAME_RESULT_DELAY, lambda: self.show_game_result("BLACKJACK", result, amount, self.show_blackjack))
 
     
     def quit_blackjack(self):
+        confirm = messagebox.askyesno("Quit Blackjack", "Are you sure you want to quit the game?\nYour bet will NOT be returned.")
+        if not confirm:
+            return
+
+        self.clear_content()
+        self.show_homepage()
+
+        # ----- Slot Machine Game -----
+
+    def show_slots(self):
+        # Starts a new slot machine game
+        self.clear_content()
+        self.slot_game = SlotMachine()
+
+        self.slots_screen = tk.Frame(self.content_frame, bg=Constants.GREY, highlightbackground=Constants.MAIN_COLOUR, highlightthickness=6)
+        self.slots_screen.pack(fill="both", expand=True, padx=64, pady=32)
+
+        self.slots_screen.rowconfigure([0, 1, 2, 3, 4, 5], weight=1)
+        self.slots_screen.columnconfigure([0, 1, 2, 3, 4], weight=1)
+
+        title = tk.Label(self.slots_screen, text="SLOT MACHINE", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        title.grid(row=0, column=0, columnspan=5, pady=10)
+
+        self.reel_frame = tk.Frame(self.slots_screen, bg=Constants.GREY)
+        self.reel_frame.grid(row=2, column=1, columnspan=3)
+
+        self.reel_labels = []
+
+        for i in range(Constants.SLOT_REEL_COUNT):
+            label = tk.Label(self.reel_frame, text="?", bg=Constants.CARD_FRONT_COLOUR, fg="black", width=5, height=2, relief="solid", borderwidth=3, font=Constants.TITLE_FONT)
+            label.grid(row=0, column=i, padx=10)
+            self.reel_labels.append(label)
+
+        self.slot_result_label = tk.Label(self.slots_screen, text="Press SPIN to play!", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.MD_FONT)
+        self.slot_result_label.grid(row=3, column=0, columnspan=5)
+
+        self.spin_button = tk.Button(self.slots_screen, text="SPIN", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.spin_slots)
+        self.spin_button.grid(row=4, column=1, columnspan=3, pady=10)
+
+        self.quit_slots_button = tk.Button(self.slots_screen, text="QUIT", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.quit_slots)
+        self.quit_slots_button.grid(row=5, column=1, columnspan=3, pady=10)
+    
+    def spin_slots(self):
+        # Prevents the player from spinning multiple times
+        self.spin_button.config(state="disabled")
+        self.slot_result_label.config(text="SPINNING...", fg=Constants.WHITE)
+        self.animate_slots(0)
+
+    def animate_slots(self, spin_count):
+        # Animates the reels before showing the final result
+        if spin_count < Constants.SLOT_SPIN_TIME * 10:
+            for label in self.reel_labels:
+                label.config(text=self.slot_game.get_random_symbol())
+
+            self.root.after(Constants.SLOT_SPIN_DELAY, lambda: self.animate_slots(spin_count + 1))
+
+        else:
+            self.finish_slots()
+    
+    def finish_slots(self):
+        # Gets the final result of the slot machine
+        reels = self.slot_game.spin()
+
+        for index, symbol in enumerate(reels):
+            self.reel_labels[index].config(text=symbol)
+
+        winnings = self.slot_game.get_winnings(self.current_bet)
+
+        if self.slot_game.result == "jackpot":
+            self.current_user["balance"] += winnings
+            self.update_stats("win")
+            result_text = f"JACKPOT! You won ${winnings:.2f}!"
+            result_colour = Constants.WINNER
+
+        else:
+            self.update_stats("loss")
+            result_text = f"You lost ${self.current_bet:.2f}"
+            result_colour = Constants.LOSER
+
+        self.save_player()
+        self.update_header()
+
+        self.root.after(Constants.GAME_RESULT_DELAY, lambda: self.show_slots_result(result_text, result_colour))
+
+    def show_slots_result(self, result_text, result_colour):
+        self.clear_content()
+
+        result_frame = tk.Frame(self.content_frame, bg=Constants.BG_COLOUR)
+        result_frame.pack(fill="both", expand=True)
+
+        # Grid configuration
+        result_frame.columnconfigure([0, 1, 2], weight=1)
+        result_frame.rowconfigure([0, 1, 2, 3, 4, 5, 6], weight=1)
+
+        title = tk.Label(result_frame, text="SLOT MACHINE", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.TITLE_FONT)
+        title.grid(row=0, column=0, columnspan=3, sticky="s", pady=10)
+
+        result_label = tk.Label(result_frame, text=result_text, bg=Constants.BG_COLOUR, fg=result_colour, font=Constants.LG_FONT)
+        result_label.grid(row=1, column=0, columnspan=3, pady=10)
+
+        balance_label = tk.Label(result_frame, text=f"Balance: ${self.current_user['balance']:.2f}", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.MD_FONT)
+        balance_label.grid(row=2, column=0, columnspan=3, pady=5)
+
+        bet_label = tk.Label(result_frame, text=f"Current bet: ${self.current_bet:.2f}", bg=Constants.BG_COLOUR, fg=Constants.WHITE, font=Constants.SM_FONT)
+        bet_label.grid(row=3, column=0, columnspan=3, pady=5)
+
+        spin_again_button = tk.Button(result_frame, text="SPIN AGAIN", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_slots)
+        spin_again_button.grid(row=4, column=0, columnspan=3, padx=80, pady=5, sticky="nsew")
+
+        change_bet_button = tk.Button(result_frame, text="CHANGE BET", bg=Constants.MAIN_COLOUR, fg="black", font=Constants.MD_FONT, borderwidth=0, width=Constants.MD_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.change_slots_bet)
+        change_bet_button.grid(row=5, column=0, columnspan=3, padx=80, pady=5, sticky="nsew")
+
+        quit_button = tk.Button(result_frame, text="QUIT", bg=Constants.GREY, fg=Constants.WHITE, font=Constants.SM_FONT_BOLD, borderwidth=0, width=Constants.SM_BUTTON_WIDTH, height=Constants.BTN_HEIGHT, command=self.show_homepage)
+        quit_button.grid(row=6, column=0, columnspan=3, pady=15)
+
+    def change_slots_bet(self):
+        self.current_bet = 0
+        self.save_player()
+
+        self.show_bet_screen("SLOT MACHINE", self.show_slots)
+
+    def quit_slots(self):
+        confirm = messagebox.askyesno("Quit Slot Machine", "Are you sure you want to quit the game?\n\nYour bet will NOT be returned.")
+        if not confirm:
+            return
+
         self.clear_content()
         self.show_homepage()
 
