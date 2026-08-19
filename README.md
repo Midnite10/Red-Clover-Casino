@@ -5,7 +5,7 @@ NCEA AS91906 + AS91907 Project. This is a digital casino game with an assortment
 
 ## Features
 - Full Casino GUI
-- Card and dice designs
+- Card designs
 - Seperate users with saved balances
 - Leaderboards for top earners
 - And more...
@@ -13,8 +13,7 @@ NCEA AS91906 + AS91907 Project. This is a digital casino game with an assortment
 ## Games
 - Blackjack
 - Slots
-- Higher or Lower
-- And more...
+- More coming soon...
 
 ## Other info
 ...
